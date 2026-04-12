@@ -21,9 +21,9 @@
 #define MUX_SIG A0
 
 //  WiFi & Slave Config 
-const char* SSID     = "Our WiFi name";
-const char* PASS     = "Our WiFi password";
-const char* SLAVE_IP = "192.168.1.100";  // update after slave boots
+const char* SSID     = "Infinix HOT 60 Pro+";
+const char* PASS     = "jojojojo";
+const char* SLAVE_IP = "10.94.114.100";  // update after slave boots
 const int   WS_PORT  = 81;
 
 //  Timing
