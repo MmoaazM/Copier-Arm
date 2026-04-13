@@ -21,13 +21,8 @@ const int WS_PORT = 81;
 
 // Servo pin connections
 // I wired them in this order
-const int SERVO_PINS[5] = { D5, D6, D7, D8, D0 };
 const int NUM_SERVOS    = 5;
-
-// smoothing settings
-// smaller step = smoother movement
-const float MAX_STEP  = 3.0f;
-const int   SMOOTH_MS = 15;
+const int SERVO_PINS[NUM_SERVOS] = { D5, D6, D7, D2, D1 };
 
 
 // servo objects
@@ -40,13 +35,9 @@ float targetAngle[NUM_SERVOS];
 // WebSocket server
 WebSocketsServer wsServer(WS_PORT);
 
-// timer for smoothing loop
-unsigned long lastSmoothTime = 0;
-
-
 // keeps values between limits
-float clampf(float v, float lo, float hi) {
-    return v < lo ? lo : (v > hi ? hi : v);
+float clampf(float value, float low, float high) {
+    return value < low ? low : (value > high ? high : value);
 }
 
 
@@ -70,14 +61,22 @@ void onWsEvent(uint8_t clientNum, WStype_t type,
 
         // when master disconnects
         case WStype_DISCONNECTED:
-            Serial.println("Master disconnected");
-            break;
+
+          Serial.println("Master disconnected");
+
+          for (int i = 0; i < NUM_SERVOS; i++) {
+
+              targetAngle[i] = 90;
+
+          }
+
+          break;
 
 
         // when angles are received
         case WStype_TEXT: {
 
-            StaticJsonDocument<128> doc;
+            StaticJsonDocument<192> doc;
 
             // read JSON data
             DeserializationError err =
@@ -131,36 +130,21 @@ void onWsEvent(uint8_t clientNum, WStype_t type,
 }
 
 
-// moves servos slowly toward target
-void smoothServos() {
+void moveServos() {
 
     for (int i = 0; i < NUM_SERVOS; i++) {
 
-        float diff =
-            targetAngle[i] - currentAngle[i];
-
-        // if already close enough
-        if (abs(diff) < 0.5f) {
+        if (fabs(currentAngle[i] - targetAngle[i]) > 0.5f) {
 
             currentAngle[i] = targetAngle[i];
-            continue;
+
+            servos[i].write((int)currentAngle[i]);
+
         }
 
-        // move step by step
-        float step =
-            clampf(diff, -MAX_STEP, MAX_STEP);
-
-        currentAngle[i] += step;
-
-        currentAngle[i] =
-            clampf(currentAngle[i], 0.0f, 180.0f);
-
-        // send to servo
-        servos[i].write(
-            (int)currentAngle[i]);
     }
-}
 
+}
 
 // runs once
 void setup() {
@@ -233,18 +217,18 @@ void setup() {
 
 // main loop
 void loop() {
-
+   
+   if (WiFi.status() != WL_CONNECTED) {
+    WiFi.reconnect();
+    // wait a moment then restart WS server
+    delay(500);
+    wsServer.begin();
+   }
+   
     // keep WebSocket running
     wsServer.loop();
 
-    // run smoothing every few ms
-    unsigned long now = millis();
+    moveServos();
 
-    if (now - lastSmoothTime >=
-        (unsigned long)SMOOTH_MS) {
-
-        lastSmoothTime = now;
-
-        smoothServos();
-    }
+   delay(5);
 }
