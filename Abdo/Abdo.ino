@@ -230,37 +230,36 @@ bool checkPauseSignal() {
 
 void playmode() {
   bool stop = false;
-  bool stepdone = true;
+
   int playindex = 0; 
 
   do { 
     
-    stepdone = true; // Assume done at the start of every check
-
+   
+    
     for (int i = 0; i < NUM_SERVOS; i++) {
       float target = servoPositions[playindex][i];
 
       if (fabs(currentAngle[i] - target) > 0.5f) {
         currentAngle[i] = target;
         servos[i].write((int)currentAngle[i]);
-        stepdone = false; // Someone moved, so step is NOT done
+        
       }
 
-      /
-      if (checkPauseSignal()) {
-        stop = true; 
-        break; 
+      
+    
     }
-
-   
-    if (stepdone && !stop) {
       playindex++;
+   if (checkPauseSignal()) {
+        stop = true; 
+       
     }
-
+  
     // Exit condition if we reach the end of recorded steps
-    if (playindex >= arrayPointer) {
+    if (playindex > arrayPointer) {
       stop = true;
     }
+      delay(50);
 
   } while (!stop); // Now the do-while knows when to stop
 }
@@ -384,8 +383,6 @@ void loop() {
     startPlayback();
   }
 if (isPlaying== HIGH ){
-
-playIndex = 0; 
 
     playmode();
 }
